@@ -1,0 +1,2 @@
+# Aether
+Algorithmic Trading script
