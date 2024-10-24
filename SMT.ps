@@ -1,0 +1,43 @@
+// This Pine Script™ code is subject to the terms of the Mozilla Public License 2.0 at https://mozilla.org/MPL/2.0/
+// © datboytyler03
+//@version=5
+strategy("SMT Divergence Strategy", overlay=true, default_qty_type=strategy.fixed, default_qty_value=1, initial_capital=10000, currency=currency.USD)
+
+// Input for user to choose Bearish or Bullish
+isBearish = input(true, "Bearish Setup?")
+
+// Fetch NQ and ES high and low data for 1-hour candles
+nq_high = request.security("CME_MINI:NQ1!", "60", high)
+nq_low = request.security("CME_MINI:NQ1!", "60", low)
+es_high = request.security("CME_MINI:ES1!", "60", high)
+es_low = request.security("CME_MINI:ES1!", "60", low)
+
+// Previous 1-hour candle high/low for both NQ and ES
+nq_prev_high = ta.valuewhen(time[1], nq_high[1], 0)
+nq_prev_low = ta.valuewhen(time[1], nq_low[1], 0)
+es_prev_high = ta.valuewhen(time[1], es_high[1], 0)
+es_prev_low = ta.valuewhen(time[1], es_low[1], 0)
+
+// Current 1-hour candle high/low for both NQ and ES
+nq_curr_high = nq_high
+nq_curr_low = nq_low
+es_curr_high = es_high
+es_curr_low = es_low
+
+// SMT Divergence logic for bearish and bullish conditions
+bearish_smt = (nq_curr_high > nq_prev_high and es_curr_high <= es_prev_high) or (es_curr_high > es_prev_high and nq_curr_high <= nq_prev_high)
+bullish_smt = (nq_curr_low < nq_prev_low and es_curr_low >= es_prev_low) or (es_curr_low < es_prev_low and nq_curr_low >= nq_prev_low)
+
+// Trade logic
+if (isBearish and bearish_smt)
+    strategy.entry("Sell", strategy.short)
+    strategy.exit("Take Profit/Stop Loss", "Sell", stop=nq_curr_high + 30, limit=nq_curr_high - 60)
+else if (not isBearish and bullish_smt)
+    strategy.entry("Buy", strategy.long)
+    strategy.exit("Take Profit/Stop Loss", "Buy", stop=nq_curr_low - 30, limit=nq_curr_low + 60)
+
+// Plotting the high and low of NQ and ES
+plot(nq_curr_high, color=color.red, title="NQ Current High")
+plot(nq_curr_low, color=color.green, title="NQ Current Low")
+plot(es_curr_high, color=color.blue, title="ES Current High")
+plot(es_curr_low, color=color.orange, title="ES Current Low")
